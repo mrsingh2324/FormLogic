@@ -1,0 +1,44 @@
+# FormLogic AI — Python/FastAPI Backend
+
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+gunicorn==23.0.0
+
+# Database (async MongoDB)
+beanie==1.26.0
+motor==3.5.1
+pymongo==4.8.0
+
+# Auth & Security
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.0
+slowapi==0.1.9              # Rate limiting (express-rate-limit equivalent)
+
+# Validation
+pydantic[email]==2.9.2
+python-dotenv==1.0.1
+
+# Email
+aiosmtplib==3.0.1
+
+# File uploads & image processing
+python-multipart==0.0.9
+Pillow==10.4.0
+
+# Google Cloud
+google-cloud-storage==2.18.2
+google-generativeai==0.8.2
+google-auth==2.35.0
+
+# Push notifications — Expo HTTP API
+httpx==0.27.2
+exponent_server_sdk==2.1.0   # Expo push token validation helper
+
+# Background jobs (BullMQ → Celery + Redis)
+celery[redis]==5.4.0
+redis==5.2.1
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0

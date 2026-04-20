@@ -1,0 +1,25 @@
+# Android generated
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Signing secrets — NEVER commit
+keystore.properties
+*.jks
+*.keystore
+
+# Kotlin/Gradle
+**/.kotlin/
+*.hprof
+
+# Test outputs
+/app/build/
+
+# Android Studio
+.navigation/
