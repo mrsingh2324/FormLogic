@@ -123,7 +123,7 @@ jobs:
         id: deploy
         run: |
           gcloud run deploy $SERVICE_NAME \
-            --image $IMAGE:${{ github.sha }} \
+            --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --platform managed \
             --region $REGION \
             --allow-unauthenticated \
@@ -136,7 +136,8 @@ jobs:
             --port 8080 \
             --set-env-vars "NODE_ENV=production" \
             --set-secrets \
-              "MONGODB_URI=formlogic-mongodb-uri:latest,\
+              "DOCKER_PASSWORD=formlogic-docker-pass:latest,\
+              MONGODB_URI=formlogic-mongodb-uri:latest,\
               JWT_SECRET=formlogic-jwt-secret:latest,\
               JWT_REFRESH_SECRET=formlogic-jwt-refresh:latest,\
               REDIS_URL=formlogic-redis-url:latest,\
@@ -191,7 +192,7 @@ jobs:
       - name: Deploy Celery worker (Cloud Run Jobs)
         run: |
           gcloud run jobs create formlogic-celery-worker \
-            --image $IMAGE:${{ github.sha }} \
+            --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --region $REGION \
             --command celery \
             --args "-A,app.services.notification_service.celery_app,worker,--loglevel=info,--concurrency=2" \
@@ -204,7 +205,7 @@ jobs:
             --max-retries 3 \
             --quiet \
           || gcloud run jobs update formlogic-celery-worker \
-            --image $IMAGE:${{ github.sha }} \
+            --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --region $REGION \
             --quiet
 
