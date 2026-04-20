@@ -116,6 +116,9 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Enable Cloud Run API
+        run: gcloud services enable run.googleapis.com --project $PROJECT_ID
+
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
@@ -185,6 +188,9 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Enable Cloud Run API
+        run: gcloud services enable run.googleapis.com --project $PROJECT_ID
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
