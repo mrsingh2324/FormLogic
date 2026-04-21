@@ -135,7 +135,6 @@ jobs:
             --timeout 120 \
             --concurrency 100 \
             --set-env-vars "NODE_ENV=production" \
-            --no-traffic \
             --timeout 300s \
             --quiet
           
@@ -192,7 +191,7 @@ jobs:
             --command "celery" \
             --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
             --set-env-vars "NODE_ENV=production" \
-            --memory 256Mi \
+            --memory 512Mi \
             --cpu 1 \
             --max-retries 3 \
             --quiet \
@@ -200,6 +199,13 @@ jobs:
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --project $PROJECT_ID \
             --region $REGION \
+            --command "celery" \
+            --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
+            --set-env-vars "NODE_ENV=production" \
+            --memory 512Mi \
+            --cpu 1 \
+            --max-retries 3 \
+            --replace-env-vars \
             --quiet
 
   # ── Android build ─────────────────────────────────────────────────────────────
