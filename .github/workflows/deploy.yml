@@ -134,11 +134,9 @@ jobs:
             --cpu 1 \
             --timeout 120 \
             --concurrency 100 \
-            --port 8080 \
             --set-env-vars "NODE_ENV=production" \
             --no-traffic \
             --timeout 300s \
-            --quiet
             --quiet
           
           echo "URL=$(gcloud run services describe $SERVICE_NAME --platform managed --project $PROJECT_ID --region $REGION --format 'value(status.url)')" >> $GITHUB_OUTPUT
