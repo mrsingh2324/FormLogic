@@ -125,6 +125,7 @@ jobs:
           gcloud run deploy $SERVICE_NAME \
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --platform managed \
+            --project $PROJECT_ID \
             --region $REGION \
             --allow-unauthenticated \
             --min-instances 0 \
@@ -137,11 +138,11 @@ jobs:
             --set-env-vars "NODE_ENV=production" \
             --quiet
           
-          echo "URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')" >> $GITHUB_OUTPUT
-          echo "Backend deployed at: $(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')"
+          echo "URL=$(gcloud run services describe $SERVICE_NAME --platform managed --project $PROJECT_ID --region $REGION --format 'value(status.url)')" >> $GITHUB_OUTPUT
+          echo "Backend deployed at: $(gcloud run services describe $SERVICE_NAME --platform managed --project $PROJECT_ID --region $REGION --format 'value(status.url)')"
 
           URL=$(gcloud run services describe $SERVICE_NAME \
-            --platform managed --region $REGION \
+            --platform managed --project $PROJECT_ID --region $REGION \
             --format "value(status.url)")
           echo "url=$URL" >> $GITHUB_OUTPUT
 
@@ -156,7 +157,7 @@ jobs:
         run: |
           echo "Deployment failed — rolling back"
           gcloud run services update-traffic $SERVICE_NAME \
-            --platform managed --region $REGION \
+            --platform managed --project $PROJECT_ID --region $REGION \
             --to-revisions LATEST=0
 
   # ── Deploy Celery worker to Cloud Run Jobs ────────────────────────────────────
@@ -185,6 +186,7 @@ jobs:
         run: |
           gcloud run jobs create formlogic-celery-worker \
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
+            --project $PROJECT_ID \
             --region $REGION \
             --command "celery" \
             --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
@@ -195,6 +197,7 @@ jobs:
             --quiet \
           || gcloud run jobs update formlogic-celery-worker \
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
+            --project $PROJECT_ID \
             --region $REGION \
             --quiet
 
@@ -222,7 +225,7 @@ jobs:
       - name: Get backend URL
         id: backend-url
         run: |
-          BACKEND_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
+          BACKEND_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --project $PROJECT_ID --region $REGION --format 'value(status.url)')
           echo "Backend URL: $BACKEND_URL"
           echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
 
