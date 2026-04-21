@@ -186,12 +186,9 @@ jobs:
           gcloud run jobs create formlogic-celery-worker \
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --region $REGION \
-            --command celery \
-            --args "-A,app.services.notification_service.celery_app,worker,--loglevel=info,--concurrency=2" \
+            --command "celery" \
+            --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
             --set-env-vars "NODE_ENV=production" \
-            --set-secrets \
-              "MONGODB_URI=formlogic-mongodb-uri:latest,\
-              REDIS_URL=formlogic-redis-url:latest" \
             --memory 256Mi \
             --cpu 1 \
             --max-retries 3 \
