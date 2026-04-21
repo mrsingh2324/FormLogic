@@ -138,18 +138,10 @@ jobs:
             --concurrency 100 \
             --port 8080 \
             --set-env-vars "NODE_ENV=production" \
-            --set-secrets \
-              "DOCKER_PASSWORD=formlogic-docker-pass:latest,\
-              MONGODB_URI=formlogic-mongodb-uri:latest,\
-              JWT_SECRET=formlogic-jwt-secret:latest,\
-              JWT_REFRESH_SECRET=formlogic-jwt-refresh:latest,\
-              REDIS_URL=formlogic-redis-url:latest,\
-              GCS_BUCKET_NAME=formlogic-gcs-bucket:latest,\
-              GCS_PROJECT_ID=formlogic-gcs-project:latest,\
-              SMTP_USER=formlogic-smtp-user:latest,\
-              SMTP_PASS=formlogic-smtp-pass:latest,\
-              GEMINI_API_KEY=formlogic-gemini-key:latest" \
             --quiet
+          
+          echo "URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')" >> $GITHUB_OUTPUT
+          echo "Backend deployed at: $(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')"
 
           URL=$(gcloud run services describe $SERVICE_NAME \
             --platform managed --region $REGION \
