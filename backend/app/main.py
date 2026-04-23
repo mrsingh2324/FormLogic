@@ -108,16 +108,8 @@ async def request_trace_middleware(request: Request, call_next):
 # ─── Health ───────────────────────────────────────────────────────────────────
 @app.get("/health", tags=["health"])
 async def health_check():
-    try:
-        health = await get_health_status()
-        return JSONResponse(content=health, status_code=503 if health["status"] == "down" else 200)
-    except Exception as e:
-        from app.utils.logger import logger
-        logger.error(f"Health check error: {e}")
-        return JSONResponse(
-            content={"status": "down", "error": "Health check failed", "details": str(e)},
-            status_code=503
-        )
+    health = await get_health_status()
+    return JSONResponse(content=health, status_code=503 if health["status"] == "down" else 200)
 
 @app.get("/ops/metrics", tags=["ops"])
 async def ops_metrics():

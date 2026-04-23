@@ -18,25 +18,20 @@ async def connect_db() -> None:
     global _client
     uri = os.getenv("MONGODB_URI")
     if not uri:
-        logger.error("MONGODB_URI environment variable is not set")
-        return
+        raise RuntimeError("MONGODB_URI environment variable is not set")
 
-    try:
-        _client = AsyncIOMotorClient(uri, maxPoolSize=10, serverSelectionTimeoutMS=5000)
-        db_name = uri.rsplit("/", 1)[-1].split("?")[0] or "formlogic"
-        db = _client[db_name]
+    _client = AsyncIOMotorClient(uri, maxPoolSize=10, serverSelectionTimeoutMS=5000)
+    db_name = uri.rsplit("/", 1)[-1].split("?")[0] or "formlogic"
+    db = _client[db_name]
 
-        await init_beanie(
-            database=db,
-            document_models=[
-                User, WorkoutSession, ExercisePlan,
-                FoodItem, MealLog, WaterLog, WeightLog, UserAchievement,
-            ],
-        )
-        logger.info("✅ MongoDB connected")
-    except Exception as e:
-        logger.error(f"Failed to connect to MongoDB: {e}")
-        _client = None
+    await init_beanie(
+        database=db,
+        document_models=[
+            User, WorkoutSession, ExercisePlan,
+            FoodItem, MealLog, WaterLog, WeightLog, UserAchievement,
+        ],
+    )
+    logger.info("✅ MongoDB connected")
 
 
 async def disconnect_db() -> None:
