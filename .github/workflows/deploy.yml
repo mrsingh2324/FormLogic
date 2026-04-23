@@ -122,17 +122,6 @@ jobs:
       - name: Deploy to Cloud Run
         id: deploy
         run: |
-          cat > /tmp/env-vars.txt << EOF
-          NODE_ENV=production
-          MONGODB_URI=${{ secrets.MONGODB_URI }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
-          GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }}
-          GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
-          EOF
-          
           gcloud run deploy $SERVICE_NAME \
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --platform managed \
@@ -145,7 +134,7 @@ jobs:
             --cpu 1 \
             --timeout 300s \
             --concurrency 100 \
-            --env-vars-file /tmp/env-vars.txt \
+            --set-env-vars "NODE_ENV=production,MONGODB_URI=${{ secrets.MONGODB_URI }},JWT_SECRET=${{ secrets.JWT_SECRET }},JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
             --quiet
           
           echo "URL=$(gcloud run services describe $SERVICE_NAME --platform managed --project $PROJECT_ID --region $REGION --format 'value(status.url)')" >> $GITHUB_OUTPUT
@@ -194,24 +183,13 @@ jobs:
 
       - name: Deploy Celery worker (Cloud Run Jobs)
         run: |
-          cat > /tmp/celery-env-vars.txt << EOF
-          NODE_ENV=production
-          MONGODB_URI=${{ secrets.MONGODB_URI }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
-          GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }}
-          GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
-          EOF
-          
           gcloud run jobs create formlogic-celery-worker \
             --image docker.io/${{ secrets.DOCKER_USERNAME }}/formlogic-backend:${{ github.sha }} \
             --project $PROJECT_ID \
             --region $REGION \
             --command "celery" \
             --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
-            --env-vars-file /tmp/celery-env-vars.txt \
+            --set-env-vars "NODE_ENV=production,MONGODB_URI=${{ secrets.MONGODB_URI }},JWT_SECRET=${{ secrets.JWT_SECRET }},JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
             --memory 512Mi \
             --cpu 1 \
             --max-retries 3 \
@@ -222,7 +200,7 @@ jobs:
             --region $REGION \
             --command "celery" \
             --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
-            --env-vars-file /tmp/celery-env-vars.txt \
+            --set-env-vars "NODE_ENV=production,MONGODB_URI=${{ secrets.MONGODB_URI }},JWT_SECRET=${{ secrets.JWT_SECRET }},JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
             --memory 512Mi \
             --cpu 1 \
             --max-retries 3 \
