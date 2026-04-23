@@ -242,6 +242,12 @@ jobs:
           distribution: temurin
           cache: gradle
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build-tools
+        run: sdkmanager "build-tools;35.0.0"
+
       - name: Create local.properties
         run: |
           echo "BASE_URL=${{ steps.backend-url.outputs.backend_url }}" > local.properties
@@ -265,7 +271,12 @@ jobs:
         if: env.KEYSTORE_FILE != ''
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > formlogic.jks
-          ${ANDROID_HOME}/build-tools/35.0.0/apksigner sign \
+          APKSIGNER_PATH=$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER_PATH" ]; then
+            echo "apksigner not found under ${ANDROID_HOME}/build-tools" >&2
+            exit 1
+          fi
+          "$APKSIGNER_PATH" sign \
             --ks formlogic.jks \
             --ks-key-alias ${{ secrets.ANDROID_KEY_ALIAS }} \
             --ks-pass pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
