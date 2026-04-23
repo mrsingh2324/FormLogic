@@ -108,12 +108,10 @@ async def request_trace_middleware(request: Request, call_next):
 # ─── Health ───────────────────────────────────────────────────────────────────
 @app.get("/health", tags=["health"])
 async def health_check():
-    """Health check that always returns 200 with clear status in body.
-    Cloud Run uses this for container health - must return 200 to receive traffic.
-    """
+    """Always return 200 - actual status in JSON body.
+    Cloud Run requires 200 to route traffic to container."""
     try:
         health = await get_health_status()
-        # Always return 200 - actual status is in the JSON body
         return JSONResponse(content=health, status_code=200)
     except Exception as e:
         from app.utils.logger import logger
@@ -122,11 +120,10 @@ async def health_check():
         return JSONResponse(
             content={
                 "status": "down",
-                "error": "Health check failed",
-                "reason": str(e),
-                "help": "Check Cloud Run logs: gcloud run services logs read --region=asia-south1 --service=formlogic-backend"
+                "error": str(e),
+                "help": "Check Cloud Run logs"
             },
-            status_code=200  # Return 200 so Cloud Run doesn't kill the container
+            status_code=200
         )
 
 @app.get("/ops/metrics", tags=["ops"])
