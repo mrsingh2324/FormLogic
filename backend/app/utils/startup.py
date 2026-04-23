@@ -4,7 +4,8 @@ import sys
 from app.utils.logger import logger
 
 REQUIRED_SECRETS = ["MONGODB_URI", "JWT_SECRET", "JWT_REFRESH_SECRET", "SMTP_USER", "SMTP_PASS"]
-REQUIRED_IN_PRODUCTION = ["GCS_BUCKET_NAME", "GCS_PROJECT_ID", "REDIS_URL"]
+REQUIRED_IN_PRODUCTION = ["GCS_BUCKET_NAME", "GCS_PROJECT_ID"]
+OPTIONAL_IN_PRODUCTION = ["REDIS_URL"]
 
 
 def validate_secrets() -> None:
@@ -14,14 +15,21 @@ def validate_secrets() -> None:
 
     if missing:
         logger.error(f"❌ Missing required environment variables:\n  " + "\n  ".join(missing))
-        sys.exit(1)
+        # Don't exit - let the app start and report via /health
+        return
+
+    # Warn about optional vars but don't fail
+    if os.getenv("NODE_ENV") == "production":
+        missing_optional = [k for k in OPTIONAL_IN_PRODUCTION if not os.getenv(k)]
+        if missing_optional:
+            logger.warning(f"⚠️  Missing optional environment variables (Celery will be disabled):\n  " + "\n  ".join(missing_optional))
 
     if len(os.getenv("JWT_SECRET", "")) < 32:
         logger.error("JWT_SECRET must be at least 32 characters")
-        sys.exit(1)
+        return
     if len(os.getenv("JWT_REFRESH_SECRET", "")) < 32:
         logger.error("JWT_REFRESH_SECRET must be at least 32 characters")
-        sys.exit(1)
+        return
 
     logger.info("✅ All required secrets validated")
 
