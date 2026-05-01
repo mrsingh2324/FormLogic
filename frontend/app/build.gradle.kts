@@ -14,6 +14,15 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
+// Read local.properties so BASE_URL can be overridden per-environment.
+// CI writes the real Cloud Run URL here; local dev falls back to emulator.
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+val baseUrl: String = localProperties.getProperty("BASE_URL") ?: "http://10.0.2.2:5000"
+
 android {
     namespace  = "com.formlogic"
     compileSdk = 35
@@ -25,7 +34,7 @@ android {
         versionCode   = 1
         versionName   = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:5000\"")
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }
 
     signingConfigs {

@@ -188,7 +188,7 @@ jobs:
             --project $PROJECT_ID \
             --region $REGION \
             --command "celery" \
-            --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
+            --args "-A app.worker worker --loglevel info --concurrency 2" \
             --set-env-vars "NODE_ENV=production,MONGODB_URI=${{ secrets.MONGODB_URI }},JWT_SECRET=${{ secrets.JWT_SECRET }},JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
             --memory 512Mi \
             --cpu 1 \
@@ -199,7 +199,7 @@ jobs:
             --project $PROJECT_ID \
             --region $REGION \
             --command "celery" \
-            --args "-A app.services.notification_service.celery_app worker --loglevel info --concurrency 2" \
+            --args "-A app.worker worker --loglevel info --concurrency 2" \
             --set-env-vars "NODE_ENV=production,MONGODB_URI=${{ secrets.MONGODB_URI }},JWT_SECRET=${{ secrets.JWT_SECRET }},JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }},SMTP_USER=${{ secrets.SMTP_USER }},SMTP_PASS=${{ secrets.SMTP_PASS }},GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GCS_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" \
             --memory 512Mi \
             --cpu 1 \

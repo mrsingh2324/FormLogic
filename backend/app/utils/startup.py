@@ -8,21 +8,31 @@ REQUIRED_IN_PRODUCTION = ["GCS_BUCKET_NAME", "GCS_PROJECT_ID", "REDIS_URL"]
 
 
 def validate_secrets() -> None:
+    is_production = os.getenv("NODE_ENV") == "production"
+
     missing = [k for k in REQUIRED_SECRETS if not os.getenv(k)]
-    if os.getenv("NODE_ENV") == "production":
+    if is_production:
         missing += [k for k in REQUIRED_IN_PRODUCTION if not os.getenv(k)]
 
     if missing:
-        logger.error(f"❌ Missing required environment variables:\n  " + "\n  ".join(missing))
-        logger.error("⚠️  App will continue but features requiring these vars will fail")
-        # Don't exit - let the app start and report errors via /health
+        msg = "❌ Missing required environment variables:\n  " + "\n  ".join(missing)
+        logger.error(msg)
+        if is_production:
+            logger.error("🛑 Cannot start in production with missing secrets — exiting.")
+            sys.exit(1)
+        else:
+            logger.warning("⚠️  Continuing in development mode — some features will fail.")
         return
 
     if len(os.getenv("JWT_SECRET", "")) < 32:
         logger.error("JWT_SECRET must be at least 32 characters")
+        if is_production:
+            sys.exit(1)
         return
     if len(os.getenv("JWT_REFRESH_SECRET", "")) < 32:
         logger.error("JWT_REFRESH_SECRET must be at least 32 characters")
+        if is_production:
+            sys.exit(1)
         return
 
     logger.info("✅ All required secrets validated")
