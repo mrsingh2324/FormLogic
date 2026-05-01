@@ -149,12 +149,14 @@ def weekly_regeneration_task():
 # The schedule is rebuilt on every app start from the DB.
 
 async def rebuild_reminder_schedule():
-    """Called at startup to re-register all user reminders in Celery beat."""
-    from app.utils.database import connect_db
+    """Called at startup to re-register all user reminders in Celery beat.
+    NOTE: connect_db() is intentionally NOT called here — it has already been
+    called by the lifespan in main.py. Calling it again re-inits Beanie and
+    can crash the startup sequence."""
     from app.models.models import User
 
-    await connect_db()
-    users = await User.find_all().to_list()
+    # Use find() — find_all() was removed in Beanie v2
+    users = await User.find().to_list()
 
     schedule = {}
     for user in users:

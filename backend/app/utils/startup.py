@@ -8,24 +8,46 @@ REQUIRED_IN_PRODUCTION = ["GCS_BUCKET_NAME", "GCS_PROJECT_ID", "REDIS_URL"]
 
 
 def validate_secrets() -> None:
+    """Check all required env vars and log each result clearly."""
+    print("[CONFIG] Checking environment variables...", flush=True)
+
+    all_vars = REQUIRED_SECRETS + REQUIRED_IN_PRODUCTION + [
+        "GEMINI_API_KEY", "REDIS_URL", "GOOGLE_CLIENT_ID", "REVENUECAT_WEBHOOK_SECRET",
+    ]
+    for key in all_vars:
+        val = os.getenv(key, "")
+        if not val:
+            print(f"[CONFIG]   {key}: ❌ NOT SET", flush=True)
+        elif key in ("JWT_SECRET", "JWT_REFRESH_SECRET", "SMTP_PASS"):
+            print(f"[CONFIG]   {key}: ✅ set (len={len(val)})", flush=True)
+        else:
+            # show first 8 chars for non-secret values
+            preview = val[:8] + "..." if len(val) > 8 else val
+            print(f"[CONFIG]   {key}: ✅ set ({preview})", flush=True)
+
     missing = [k for k in REQUIRED_SECRETS if not os.getenv(k)]
     if os.getenv("NODE_ENV") == "production":
         missing += [k for k in REQUIRED_IN_PRODUCTION if not os.getenv(k)]
 
     if missing:
-        logger.error(f"❌ Missing required environment variables:\n  " + "\n  ".join(missing))
+        msg = "❌ Missing required environment variables: " + ", ".join(missing)
+        print(f"[CONFIG] {msg}", flush=True)
+        logger.error(msg)
         logger.error("⚠️  App will continue but features requiring these vars will fail")
-        # Don't exit — let the app start so Cloud Run health check returns 200
-        # and the /health endpoint can report the degraded state.
+        logger.error("👉 Add secrets: gcloud run services update formlogic-backend "
+                     "--region=asia-south1 --set-env-vars KEY=value")
         return
 
     if len(os.getenv("JWT_SECRET", "")) < 32:
+        print("[CONFIG] ❌ JWT_SECRET must be at least 32 characters", flush=True)
         logger.error("JWT_SECRET must be at least 32 characters")
         return
     if len(os.getenv("JWT_REFRESH_SECRET", "")) < 32:
+        print("[CONFIG] ❌ JWT_REFRESH_SECRET must be at least 32 characters", flush=True)
         logger.error("JWT_REFRESH_SECRET must be at least 32 characters")
         return
 
+    print("[CONFIG] ✅ All required secrets validated", flush=True)
     logger.info("✅ All required secrets validated")
 
 

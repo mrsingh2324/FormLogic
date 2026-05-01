@@ -32,22 +32,69 @@ from app.routes import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    validate_secrets()
-    await connect_db()
-    # Rebuild notification reminder schedule from DB
+    """Startup sequence with full diagnostic logging at every step."""
+    import traceback as _tb
+    import sys as _sys
+
+    startup_log: list[dict] = []
+    app.state.startup_log = startup_log
+    app.state.startup_ok = False
+
+    def _step(n: int, name: str, status: str, detail: str = ""):
+        entry = {"step": n, "name": name, "status": status, "detail": detail}
+        startup_log.append(entry)
+        icon = "✅" if status == "ok" else "❌" if status == "error" else "⚠️"
+        msg = f"[STARTUP {n}] {icon} {name}" + (f" — {detail}" if detail else "")
+        print(msg, flush=True)   # captured by Cloud Run logs even if logger fails
+        logger.info(msg)
+
+    print("[STARTUP] ══════════════════════════════════════════", flush=True)
+    print(f"[STARTUP] FormLogic backend starting — Python {_sys.version}", flush=True)
+    print(f"[STARTUP] NODE_ENV={os.getenv('NODE_ENV','<not set>')}", flush=True)
+    print(f"[STARTUP] PORT={os.getenv('PORT','<not set>')}", flush=True)
+    print("[STARTUP] ══════════════════════════════════════════", flush=True)
+
+    # ── Step 1: secrets validation ─────────────────────────────────────────────
+    try:
+        validate_secrets()
+        _step(1, "validate_secrets", "ok")
+    except Exception as exc:
+        _step(1, "validate_secrets", "error", _tb.format_exc())
+
+    # ── Step 2: MongoDB connection ─────────────────────────────────────────────
+    try:
+        await connect_db()
+        _step(2, "connect_db (MongoDB)", "ok")
+    except Exception as exc:
+        _step(2, "connect_db (MongoDB)", "error", str(exc))
+        print(f"[STARTUP] MongoDB traceback:\n{_tb.format_exc()}", flush=True)
+
+    # ── Step 3: notification schedule rebuild ──────────────────────────────────
     try:
         from app.services.notification_service import rebuild_reminder_schedule
-        await rebuild_reminder_schedule()
-    except Exception as e:
-        logger.warning(f"Could not rebuild reminder schedule: {e}")
-    # Log Celery beat status — beat runs as a separate process (see app/worker.py)
+        _step(3, "import notification_service", "ok")
+        try:
+            await rebuild_reminder_schedule()
+            _step(4, "rebuild_reminder_schedule", "ok")
+        except Exception as exc:
+            _step(4, "rebuild_reminder_schedule", "warn", str(exc))
+    except Exception as exc:
+        _step(3, "import notification_service", "error", str(exc))
+        print(f"[STARTUP] notification_service import traceback:\n{_tb.format_exc()}", flush=True)
+
+    # ── Step 4: Celery / Redis check ───────────────────────────────────────────
     redis_url = os.getenv("REDIS_URL", "")
     if redis_url:
-        logger.info(f"Celery broker configured at {redis_url[:20]}... — start beat with: celery -A app.worker beat")
+        _step(5, "Redis/Celery", "ok", f"broker={redis_url[:30]}...")
     else:
-        logger.warning("REDIS_URL not set — Celery beat scheduling disabled")
+        _step(5, "Redis/Celery", "warn", "REDIS_URL not set — background tasks disabled")
+
+    app.state.startup_ok = True
+    print("[STARTUP] 🚀 FormLogic API v1 ready to serve requests", flush=True)
     logger.info("🚀 FormLogic API v1 started")
+
     yield
+
     await disconnect_db()
     logger.info("FormLogic API shut down")
 
@@ -107,24 +154,41 @@ async def request_trace_middleware(request: Request, call_next):
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 @app.get("/health", tags=["health"])
-async def health_check():
-    """Always return 200 - actual status in JSON body.
-    Cloud Run requires 200 to route traffic to container."""
+async def health_check(request: Request):
+    """Always returns HTTP 200. Actual health + full startup trace in JSON body.
+    Cloud Run requires 200 to route traffic; detailed status is in the JSON."""
+    import traceback as _tb
     try:
         health = await get_health_status()
-        return JSONResponse(content=health, status_code=200)
-    except Exception as e:
-        from app.utils.logger import logger
-        import traceback
-        logger.error(f"Health check error: {e}\n{traceback.format_exc()}")
-        return JSONResponse(
-            content={
-                "status": "down",
-                "error": str(e),
-                "help": "Check Cloud Run logs"
+    except Exception as exc:
+        logger.error(f"Health check error: {exc}\n{_tb.format_exc()}")
+        health = {"status": "down", "error": str(exc), "traceback": _tb.format_exc()}
+
+    # Attach the startup trace so one curl /health call shows everything
+    startup_log = getattr(request.app.state, "startup_log", [])
+    startup_ok  = getattr(request.app.state, "startup_ok", False)
+
+    return JSONResponse(
+        content={
+            **health,
+            "startup": {
+                "completed": startup_ok,
+                "steps": startup_log,
             },
-            status_code=200
-        )
+            "env_check": {
+                "MONGODB_URI":        "set" if os.getenv("MONGODB_URI") else "MISSING",
+                "JWT_SECRET":         "set" if os.getenv("JWT_SECRET") else "MISSING",
+                "JWT_REFRESH_SECRET": "set" if os.getenv("JWT_REFRESH_SECRET") else "MISSING",
+                "SMTP_USER":          "set" if os.getenv("SMTP_USER") else "MISSING",
+                "SMTP_PASS":          "set" if os.getenv("SMTP_PASS") else "MISSING",
+                "REDIS_URL":          "set" if os.getenv("REDIS_URL") else "not set (optional)",
+                "GCS_BUCKET_NAME":    "set" if os.getenv("GCS_BUCKET_NAME") else "not set (optional)",
+                "GEMINI_API_KEY":     "set" if os.getenv("GEMINI_API_KEY") else "not set (AI disabled)",
+                "NODE_ENV":           os.getenv("NODE_ENV", "not set"),
+            },
+        },
+        status_code=200,
+    )
 
 @app.get("/ops/metrics", tags=["ops"])
 async def ops_metrics():
