@@ -20,7 +20,7 @@ USER formlogic
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
-ENV PORT=8080 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 LOG_LEVEL=INFO
+ENV PORT=8080 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUTF8=1 LANG=C.UTF-8 LC_ALL=C.UTF-8 LOG_LEVEL=INFO
 CMD exec gunicorn app.main:app \
     --worker-class uvicorn.workers.UvicornWorker \
     --workers 2 \
